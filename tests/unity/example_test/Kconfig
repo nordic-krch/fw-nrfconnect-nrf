@@ -1,0 +1,17 @@
+# Kconfig - Config options for logger sample app
+#
+# Copyright (c) 2018 Nordic Semiconductor ASA
+#
+# SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
+#
+
+mainmenu "Example unity test"
+
+menu "UUT module configuration"
+
+config UUT_PARAM_CHECK
+	bool "Function parameter check"
+
+endmenu
+
+source "Kconfig.zephyr"
