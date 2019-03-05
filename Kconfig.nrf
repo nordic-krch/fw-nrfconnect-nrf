@@ -10,7 +10,7 @@ rsource "subsys/Kconfig"
 rsource "lib/Kconfig"
 rsource "drivers/Kconfig"
 rsource "ext/Kconfig"
-
 orsource "../nrfxlib/Kconfig.nrfxlib"
+rsource "tests/unity/Kconfig"
 
 endmenu
