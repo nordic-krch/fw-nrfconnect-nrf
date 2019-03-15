@@ -1,0 +1,23 @@
+#
+# Copyright (c) 2018 Nordic Semiconductor
+#
+# SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
+#
+
+menuconfig SHELL_BT_NUS
+	bool
+	prompt "Shell Bluetooth NUS transport"
+	depends on BT
+	select SHELL
+	select BT_GATT_NUS
+	select RING_BUFFER
+	help
+	  Enable shell BT NUS transport.
+
+if SHELL_BT_NUS
+
+module = SHELL_BT_NUS
+module-str = Shell over Bleutooth NUS
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+endif #SHELL_BT_NUS
