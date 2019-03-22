@@ -1,4 +1,4 @@
-#
+#/
 # Copyright (c) 2019 Nordic Semiconductor
 #
 # SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
@@ -34,23 +34,32 @@ function(test_runner_generate test_file_path)
 
   file(MAKE_DIRECTORY "${UNITY_PRODUCTS_DIR}")
   get_filename_component(test_file_name "${test_file_path}" NAME)
-  set(output_file "${UNITY_PRODUCTS_DIR}/runner/runner_${test_file_name}")
-  file(MAKE_DIRECTORY "${UNITY_PRODUCTS_DIR}/runner")
+  set(output_file "${UNITY_PRODUCTS_DIR}/runner_${test_file_name}")
 
-  execute_process(
+#  execute_process(
+#    COMMAND ${RUBY_EXECUTABLE}
+#    ${CMOCK_DIR}/vendor/unity/auto/generate_test_runner.rb
+#    ${test_file_path} ${output_file}
+#    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+#    RESULT_VARIABLE op_result
+#  )
+#  if (NOT ${op_result} EQUAL 0)
+#      message(FATAL_ERROR "Failed to generate runner ${output_file}")
+#  endif()
+
+  add_custom_command(
     COMMAND ${RUBY_EXECUTABLE}
     ${CMOCK_DIR}/vendor/unity/auto/generate_test_runner.rb
     ${test_file_path} ${output_file}
+    MAIN_DEPENDENCY ${test_file_path}
+    OUTPUT ${output_file}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    RESULT_VARIABLE op_result
   )
 
-  if (NOT ${op_result} EQUAL 0)
-      message(FATAL_ERROR "Failed to generate runner ${output_file}")
-  endif()
 
-  file(GLOB app_sources ${UNITY_PRODUCTS_DIR}/runner/*.c)
-  target_sources(app PRIVATE ${app_sources})
+  target_sources(app PRIVATE ${output_file})
+#  file(GLOB app_sources ${UNITY_PRODUCTS_DIR}/*.c)
+#  target_sources(app PRIVATE ${app_sources})
 
   message(STATUS "Generating test runner ${unity_runner_arg3}")
 endfunction()

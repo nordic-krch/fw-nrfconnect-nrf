@@ -24,8 +24,7 @@ target_sources(app PRIVATE src/uut/uut.c)
 target_include_directories(app PRIVATE ./src/uut)
 
 # add test file
-FILE(GLOB app_sources src/example_test.c)
-target_sources(app PRIVATE ${app_sources})
+target_sources(app PRIVATE src/example_test.c)
 target_include_directories(app PRIVATE .)
 
 # Preinclude file to the module under test to redefine IS_ENABLED() macro
