@@ -4,5 +4,11 @@ config LOG_BACKEND_TZ_S
 	bool "Enable TrustZone Secure log backend"
 	depends on ARM_SECURE_FIRMWARE
 
+if LOG_MULTIDOMAIN
 
+config LOG_LINK_TZ_S
+	bool "Enable link to TrustZone Secure log backend"
+	depends on ARM_NONSECURE_FIRMWARE
+
+endif #LOG_MULTIDOMAIN
 endif #LOG
