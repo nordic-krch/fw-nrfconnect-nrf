@@ -10,6 +10,9 @@
 #include <secure_services.h>
 #include <kernel.h>
 #include <pm_config.h>
+#include <logging/log_link.h>
+#include <logging/log.h>
+LOG_MODULE_REGISTER(app);
 
 void print_hex_number(u8_t *num, size_t len)
 {
@@ -42,12 +45,14 @@ void main(void)
 		u8_t random_number[random_number_len];
 		size_t olen = random_number_len;
 
+		LOG_INF("Requesting %d random numbers", random_number_len);
 		ret = spm_request_random_number(random_number, random_number_len, &olen);
 		if (ret != 0) {
 			printk("Could not get random number (err: %d)\n", ret);
 			continue;
 		}
 		print_random_number(random_number, olen);
+		k_sleep(20);
 	}
 
 #ifdef CONFIG_BOOTLOADER_MCUBOOT

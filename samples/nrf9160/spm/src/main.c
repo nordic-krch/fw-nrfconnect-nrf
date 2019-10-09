@@ -5,6 +5,9 @@
  */
 
 #include <spm.h>
+#include <logging/log.h>
+#include <logging/log_ctrl.h>
+LOG_MODULE_REGISTER(secure_app);
 
 /*
  * Example code for a Secure Partition Manager application.
@@ -49,9 +52,16 @@
  *  0 kB  |---------------------|
  */
 
-
 void main(void)
 {
+	/* If logger is enabled on secure application it must work in
+	 * synchronous (panic) mode.
+	 */
+	LOG_PANIC();
+
+	LOG_INF("Configure SPM");
 	spm_config();
+
+	LOG_INF("Jump to non-secure application");
 	spm_jump();
 }
