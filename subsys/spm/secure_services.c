@@ -10,6 +10,8 @@
 #include <autoconf.h>
 #include <secure_services.h>
 #include <string.h>
+#include <logging/log.h>
+LOG_MODULE_REGISTER(secure_services);
 
 #if USE_PARTITION_MANAGER
 #include <pm_config.h>
@@ -70,7 +72,10 @@ int spm_request_read(void *destination, u32_t addr, size_t len)
 #endif
 	};
 
+	LOG_INF("Read request (%d bytes) from address:%p to %p",
+			len, (void *)addr, destination);
 	if (destination == NULL || len <= 0) {
+		LOG_ERR("Invalid parameters in read request");
 		return -EINVAL;
 	}
 
@@ -84,8 +89,10 @@ int spm_request_read(void *destination, u32_t addr, size_t len)
 		}
 	}
 
+	LOG_ERR("Read request - no permission");
 	return -EPERM;
 }
+
 #endif /* CONFIG_SPM_SERVICE_READ */
 
 #ifdef CONFIG_SPM_SERVICE_REBOOT
@@ -108,6 +115,8 @@ int spm_request_random_number(u8_t *output, size_t len, size_t *olen)
 	}
 
 	err = mbedtls_hardware_poll(&rng_workbuf, output, len, olen);
+	LOG_INF("Requested %d random bytes, got %d", len, *olen);
+
 	return err;
 }
 #endif /* CONFIG_SPM_SERVICE_RNG */
