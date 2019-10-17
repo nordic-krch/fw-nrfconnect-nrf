@@ -10,68 +10,62 @@
 #include <secure_services.h>
 #include <kernel.h>
 #include <pm_config.h>
+#include <shell/shell.h>
 #include <logging/log_link.h>
 #include <logging/log.h>
 LOG_MODULE_REGISTER(app);
 
-void print_hex_number(u8_t *num, size_t len)
+void print_hex_number(const struct shell *shell, u8_t *num, size_t len)
 {
-	printk("0x");
+	shell_fprintf(shell, SHELL_NORMAL, "0x");
 	for (int i = 0; i < len; i++) {
-		printk("%02x", num[i]);
+		shell_fprintf(shell, SHELL_NORMAL, "%02x", num[i]);
 	}
-	printk("\n");
+	shell_fprintf(shell, SHELL_NORMAL, "\n");
 }
 
-void print_random_number(u8_t *num, size_t len)
+void print_random_number(const struct shell *shell, u8_t *num, size_t len)
 {
-	printk("Random number len %d: ", len);
-	print_hex_number(num, len);
+	shell_fprintf(shell, SHELL_NORMAL, "Random number len %d: ", len);
+	print_hex_number(shell, num, len);
 }
 
-void main(void)
+static int cmd_random_numbers(const struct shell *shell,
+			      size_t argc, char **argv)
 {
-	const int sleep_time_s = 5;
-	const int random_number_count = 16;
-	const int random_number_len = 144;
+	const int len = 144;
+	u8_t random_number[len];
+	size_t olen = len;
 	int ret;
 
-	printk("Secure Services example.\n");
-	printk("Generate %d strings of %d random bytes, read MCUboot header, "
-		"sleep, then reboot.\n\n",
-		random_number_count, random_number_len);
-
-	for (int i = 0; i < random_number_count; i++) {
-		u8_t random_number[random_number_len];
-		size_t olen = random_number_len;
-
-		LOG_INF("Requesting %d random numbers", random_number_len);
-		ret = spm_request_random_number(random_number, random_number_len, &olen);
-		if (ret != 0) {
-			printk("Could not get random number (err: %d)\n", ret);
-			continue;
-		}
-		print_random_number(random_number, olen);
-		k_sleep(20);
-	}
-
-#ifdef CONFIG_BOOTLOADER_MCUBOOT
-	const int num_bytes_to_read = PM_MCUBOOT_PAD_SIZE;
-	const int read_address = PM_MCUBOOT_PAD_ADDRESS;
-	u8_t buf[num_bytes_to_read];
-
-	printk("\nRead %d bytes from address 0x%x (MCUboot header for current "
-		"image):\n", num_bytes_to_read, read_address);
-	ret = spm_request_read(buf, read_address, num_bytes_to_read);
+	LOG_INF("Requesting %d random numbers", len);
+	ret = spm_request_random_number(random_number, len, &olen);
 	if (ret != 0) {
-		printk("Could not read data (err: %d)\n", ret);
+		shell_error(shell, "Could not get random number (err: %d)\n",
+				ret);
+		return 0;
 	}
 
-	print_hex_number(buf, num_bytes_to_read);
-#endif
+	print_random_number(shell, random_number, olen);
 
-	printk("\nReboot in %d seconds.\n", sleep_time_s);
-	k_sleep(K_SECONDS(5));
-
-	sys_reboot(0); /* Argument is ignored. */
+	return 0;
 }
+
+static int cmd_reboot(const struct shell *shell,
+			      size_t argc, char **argv)
+{
+	sys_reboot(0); /* Argument is ignored. */
+
+	return 0;
+}
+
+SHELL_STATIC_SUBCMD_SET_CREATE(sub_log_secure_service,
+	SHELL_CMD_ARG(random_numbers, NULL, "Get random numbers.",
+			cmd_random_numbers, 1, 0),
+	SHELL_CMD_ARG(reboot, NULL, "Reboot", cmd_reboot, 1, 0),
+	SHELL_SUBCMD_SET_END
+);
+
+SHELL_CMD_REGISTER(secure_service, &sub_log_secure_service,
+		"Secure services commands", NULL);
+

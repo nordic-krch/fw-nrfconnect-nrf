@@ -9,9 +9,15 @@ This firmware needs :ref:`secure_partition_manager` to also be present on the ch
 Overview
 ********
 
-This sample generates random numbers and prints them to the console, sleeps, then reboots.
-This is to demonstrate the :cpp:func:`spm_request_system_reboot` and :cpp:func:`spm_request_random_number` secure services.
+This sample implements two shell commands:
+- `secure service random_numbers` which generates random numbers and prints them to the console.
+   This demonstrates the :cpp:func:`spm_request_random_number` secure service.
+- `secure service reboot` which reboots the application. This demonstrates the :cpp:func:`spm_request_system_reboot` secure services.
 
+Additionally, sample demonstrates multi-domain logger where log messages from secure and non-secure domain
+are outputed to the shell. Log messages from secure domain can be runtime filtered in the
+same way as in single domain scenario.
+ 
 Requirements
 ************
 
