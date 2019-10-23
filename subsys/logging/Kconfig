@@ -1,3 +1,8 @@
+if LOG
+
 config LOG_BACKEND_TZ_S
 	bool "Enable TrustZone Secure log backend"
 	depends on ARM_SECURE_FIRMWARE
+
+
+endif #LOG

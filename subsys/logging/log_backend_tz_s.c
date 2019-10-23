@@ -95,6 +95,10 @@ u32_t log_backend_tz_s_get_source_count(u32_t domain_id)
 	return log_sources_count(LOCAL_DOMAIN_ID);
 }
 
+#ifndef CONFIG_LOG_DOMAIN_NAME
+#define CONFIG_LOG_DOMAIN_NAME ""
+#endif
+
 __TZ_NONSECURE_ENTRY_FUNC
 void log_backend_tz_s_get_domain_name(u32_t domain_id, char *name, u32_t *len)
 {
@@ -125,7 +129,7 @@ void log_backend_tz_s_get_compiled_level(u32_t domain_id, u32_t src_id,
 					 u8_t * level)
 {
 	if (domain_id == 0) {
-		*level = log_compiled_level_get(src_id);
+		*level = log_compiled_level_get(0, src_id);
 	} else {
 		*level = 0;
 	}
