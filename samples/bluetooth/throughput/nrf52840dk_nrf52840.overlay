@@ -1,0 +1,41 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/ {
+	chosen {
+		/*zephyr,bt-uart=&lpuart;*/
+		zephyr,bt-uart=&uart1;
+	};
+};
+
+
+&uart1 {
+	compatible = "nordic,nrf-uarte";
+	current-speed = <1000000>;
+	status = "okay";
+	rx-pin = <33>;
+	tx-pin = <34>;
+	rts-pin = <35>;
+	cts-pin = <36>;
+	hw-flow-control;
+};
+
+/*
+&uart1 {
+	compatible = "nordic,nrf-uarte";
+	rx-pin = <33>;
+	tx-pin = <34>;
+	status = "okay";
+	current-speed = <1000000>;
+	/delete-property/ rts-pin;
+	/delete-property/ cts-pin;
+
+	lpuart: nrf-sw-lpuart {
+		compatible = "nordic,nrf-sw-lpuart";
+		status = "okay";
+		label = "LPUART";
+		req-pin = <35>;
+		rdy-pin = <36>;
+	};
+};
+
+*/
