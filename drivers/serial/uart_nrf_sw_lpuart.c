@@ -279,9 +279,17 @@ static void deactivate_rx(struct lpuart_data *data)
 	}
 
 	/* abort rx */
+	if (data->rx_state != RX_ACTIVE) {
+		if (data->rx_req && data->rx_state == RX_IDLE) {
+			activate_rx(data);
+		}
+
+		return;
+	}
+
 	data->rx_state = RX_TO_IDLE;
 	err = uart_rx_disable(data->uart);
-	if (err < 0) {
+	if (err < 0 && err != -EFAULT) {
 		LOG_ERR("RX: Failed to disable (err: %d)", err);
 	}
 }
@@ -327,7 +335,12 @@ static void on_rdy_pin_change(struct lpuart_data *data)
 {
 	if (nrf_gpiote_event_polarity_get(NRF_GPIOTE, data->rdy_pin.ch)
 		== NRF_GPIOTE_POLARITY_LOTOHI) {
-		__ASSERT_NO_MSG(data->rx_state != RX_ACTIVE);
+		/* There is a possibility that pin is floating so ignore
+		 * unexpected changes.
+		 */
+		if(data->rx_state == RX_ACTIVE) {
+			return;
+		}
 
 		LOG_DBG("RX: Request detected.");
 		data->rx_req = true;
@@ -335,8 +348,6 @@ static void on_rdy_pin_change(struct lpuart_data *data)
 			start_rx_activation(data);
 		}
 	} else {
-		__ASSERT_NO_MSG(data->rx_state == RX_ACTIVE);
-
 		LOG_DBG("RX: End detected.");
 		deactivate_rx(data);
 	}
@@ -476,16 +487,18 @@ static void uart_callback(const struct device *uart, struct uart_event *evt,
 
 	case UART_RX_DISABLED:
 		LOG_DBG("Rx disabled");
-		__ASSERT_NO_MSG((data->rx_state != RX_ACTIVE) &&
-			 (data->rx_state != RX_IDLE) &&
+		__ASSERT_NO_MSG((data->rx_state != RX_IDLE) &&
 			 (data->rx_state != RX_OFF));
 
 		if (data->rx_state == RX_TO_IDLE) {
 			/* Need to request new buffer since uart was disabled */
+			LOG_DBG("buf req");
 			evt->type = UART_RX_BUF_REQUEST;
-		} else if (data->rx_state == RX_TO_OFF) {
+		} else {
+			data->rx_buf = NULL;
 			data->rx_state = RX_OFF;
 		}
+
 		user_callback(dev, evt);
 		break;
 	case UART_RX_STOPPED:
@@ -690,8 +703,9 @@ static void int_driven_evt_handler(const struct device *lpuart,
 		break;
 	case UART_RX_BUF_REQUEST:
 		if (int_driven_rd_available(data) == 0) {
+			LOG_DBG("feeding");
 			int_driven_rx_feed(lpuart, data);
-		}
+		} else LOG_DBG("int buf req, no data");
 		break;
 	case UART_RX_STOPPED:
 		call_handler = data->int_driven.err_enabled;
@@ -730,11 +744,6 @@ static int api_fifo_read(const struct device *dev,
 		       &data->int_driven.rxbuf[data->int_driven.rxrd],
 		       cpylen);
 		data->int_driven.rxrd += cpylen;
-		if ((data->rx_state == RX_IDLE)
-		    && !int_driven_rd_available(data)) {
-			/* Whole packet read, RX can be re-enabled. */
-			int_driven_rx_feed(dev, data);
-		}
 	}
 
 	return cpylen;
@@ -807,6 +816,11 @@ static void api_irq_rx_enable(const struct device *dev)
 	data->int_driven.rx_enabled = true;
 	if (int_driven_rd_available(data)) {
 		data->int_driven.callback(dev, data->int_driven.user_data);
+	}
+
+	if (!int_driven_rd_available(data) && data->rx_state == RX_TO_IDLE) {
+		/* Whole packet read, RX can be re-enabled. */
+		int_driven_rx_feed(dev, data);
 	}
 }
 

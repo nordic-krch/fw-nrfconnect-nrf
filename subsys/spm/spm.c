@@ -12,6 +12,7 @@
 #include <drivers/gpio.h>
 #include <hal/nrf_spu.h>
 #include <arch/arm/aarch32/irq.h>
+#include <spm.h>
 #include "spm_internal.h"
 
 #if !defined(CONFIG_ARM_SECURE_FIRMWARE)
@@ -252,7 +253,7 @@ static bool usel_or_split(uint8_t id)
 	return present && (usel || split);
 }
 
-static int spm_config_peripheral(uint8_t id, bool dma_present)
+static int spm_config_peripheral(uint8_t id, bool dma_present, bool lock)
 {
 	/* Set a peripheral to Non-Secure state, if
 	 * - it is present
@@ -268,7 +269,7 @@ static int spm_config_peripheral(uint8_t id, bool dma_present)
 	if (usel_or_split(id)) {
 		NRF_SPU->PERIPHID[id].PERM = PERIPH_PRESENT | PERIPH_NONSEC |
 			(dma_present ? PERIPH_DMA_NOSEP : 0) |
-			PERIPH_LOCK;
+			(lock ? PERIPH_LOCK : 0);
 	}
 
 	/* Even for non-present peripherals we force IRQs to be routed
@@ -394,7 +395,7 @@ static void spm_config_peripherals(void)
 			continue;
 		}
 
-		err = spm_config_peripheral(periph[i].id, false);
+		err = spm_config_peripheral(periph[i].id, false, true);
 		if (err) {
 			PRINT("\tERROR\n");
 		} else {
@@ -427,6 +428,15 @@ static void spm_configure_ns(const tz_nonsecure_setup_conf_t
 	/* Allow Non-Secure firmware to use the FPU */
 	tz_nonsecure_fpu_access_enable();
 #endif /* CONFIG_ARMV7_M_ARMV8_M_FP */
+}
+
+static bool spm_periph_reconf(uint8_t id, bool secure)
+{
+	bool sec = (NRF_SPU->PERIPHID[id].PERM & PERIPH_SEC);
+
+	NRF_SPU->PERIPHID[id].PERM = BIT(5) | ( secure ? PERIPH_SEC : 0);
+
+	return sec;
 }
 
 void spm_jump(void)
@@ -463,8 +473,7 @@ void spm_jump(void)
 		 */
 
 		/* Configure UARTE0 as non-secure */
-		spm_config_peripheral(
-			NRFX_PERIPHERAL_ID_GET(NRF_UARTE0), 0);
+		spm_config_peripheral(NRFX_PERIPHERAL_ID_GET(NRF_UARTE0), 0, false);
 
 		__DSB();
 		__ISB();
@@ -486,3 +495,70 @@ void spm_config(void)
 	spm_config_sram();
 	spm_config_peripherals();
 }
+
+static spm_ns_on_fatal_error_t ns_fatal_error_handler;
+
+void spm_ns_fatal_error_handler(void)
+{
+	TZ_NONSECURE_FUNC_PTR_DECLARE(ns_handler_fptr);
+	ns_handler_fptr = TZ_NONSECURE_FUNC_PTR_CREATE(ns_fatal_error_handler);
+	if (TZ_NONSECURE_FUNC_PTR_IS_NS(ns_handler_fptr)) {
+		spm_periph_reconf(NRFX_PERIPHERAL_ID_GET(NRF_UARTE0), false);
+		__DSB();
+		__ISB();
+		ns_handler_fptr();
+	}
+}
+
+__TZ_NONSECURE_ENTRY_FUNC
+void spm_ns_set_fatal_error_handler(spm_ns_on_fatal_error_t handler)
+{
+	ns_fatal_error_handler = handler;
+}
+
+#include <drivers/uart.h>
+
+struct spm_uart_config {
+	const struct device *uart;
+	NRF_UARTE_Type *regs;
+};
+
+/** @brief Poll out with switching to secure state and restoring previous state.
+ *
+ * This approach can be used to share single UARTE instance with secure and
+ * non-secure. In order to allow that LOCK bit must not be set in UARTE PERM
+ * configuration.
+ *
+ * Note! Only for debugging purposes.
+ */
+static void poll_out(const struct device *dev, unsigned char c)
+{
+	const struct spm_uart_config *cfg = (const struct spm_uart_config *)dev->config;
+	uint8_t id = NRFX_PERIPHERAL_ID_GET(cfg->regs);
+	bool sec;
+
+	sec  = spm_periph_reconf(id, true);
+	uart_poll_out(cfg->uart, c);
+	spm_periph_reconf(id , sec);
+}
+
+static const struct uart_driver_api spm_uart_api = {
+	.poll_out = poll_out,
+};
+
+#define DT_DRV_COMPAT nordic_nrf_spm_uart
+
+static const struct spm_uart_config spm_uart_config = {
+	.uart = DEVICE_DT_GET(DT_BUS(DT_NODELABEL(spm_uart))),
+	.regs = (NRF_UARTE_Type *)DT_REG_ADDR(DT_BUS(DT_NODELABEL(spm_uart)))
+};
+
+static int spm_uart_init(const struct device *dev)
+{
+	return 0;
+}
+
+DEVICE_DEFINE(spm_uart, "SPM_UART", spm_uart_init, device_pm_control_nop,
+	      NULL, &spm_uart_config,
+	      POST_KERNEL, CONFIG_KERNEL_INIT_PRIORITY_DEVICE,
+	      &spm_uart_api);

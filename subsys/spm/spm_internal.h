@@ -120,6 +120,11 @@ extern "C" {
 	  << SPU_PERIPHID_PERM_SECATTR_Pos) &                                  \
 	 SPU_PERIPHID_PERM_SECATTR_Msk)
 
+#define PERIPH_SEC                                                             \
+	((SPU_PERIPHID_PERM_SECATTR_Secure                                     \
+	  << SPU_PERIPHID_PERM_SECATTR_Pos) &                                  \
+	 SPU_PERIPHID_PERM_SECATTR_Msk)
+
 #define PERIPH_DMA_NOSEP                                                       \
 	((SPU_PERIPHID_PERM_DMA_NoSeparateAttribute                            \
 	  << SPU_PERIPHID_PERM_DMA_Pos) &                                      \

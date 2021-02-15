@@ -5,6 +5,7 @@
  */
 
 #include <arch/cpu.h>
+#include <spm.h>
 #include <logging/log_ctrl.h>
 #include <logging/log.h>
 #include <fatal.h>
@@ -20,6 +21,10 @@ void k_sys_fatal_error_handler(unsigned int reason,
 	ARG_UNUSED(reason);
 
 	LOG_PANIC();
+
+#ifdef CONFIG_TRUSTED_EXECUTION_SECURE
+	spm_ns_fatal_error_handler();
+#endif
 
 	LOG_ERR("Resetting system");
 	sys_arch_reboot(0);

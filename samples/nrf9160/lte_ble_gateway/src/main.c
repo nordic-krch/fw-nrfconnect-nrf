@@ -21,6 +21,8 @@
 
 #include "alarm.h"
 
+#include <logging/log.h>
+LOG_MODULE_REGISTER(app);
 /* Interval in milliseconds between each time status LEDs are updated. */
 #define LEDS_UPDATE_INTERVAL K_MSEC(500)
 
@@ -490,11 +492,15 @@ static void buttons_leds_init(void)
 	}
 }
 
+extern void set_ns_log_panic(void);
+
 void main(void)
 {
+	set_ns_log_panic();
 	printk("LTE Sensor Gateway sample started\n");
 
 	buttons_leds_init();
+
 	ble_init();
 
 	work_init();
