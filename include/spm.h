@@ -25,6 +25,13 @@
 extern "C" {
 #endif
 
+/** @brief Prototype of the function that is called in non-secure context from
+ *	   secure fault handler context.
+ *
+ * Function can be used to print pending logging data before reboot.
+ */
+typedef void (*spm_ns_on_fatal_error_t)(void);
+
 /** @brief Jump to non-secure partition.
  *
  * This function extracts the VTOR_NS from
@@ -40,6 +47,25 @@ void spm_jump(void);
  * Kconfig. The RAM and flash partitioning is configured statically.
  */
 void spm_config(void);
+
+/** @brief Set handler which is called by the SPM fault handler.
+ *
+ * Handler is intended to be used to print out any pending log data before reset.
+ *
+ * @note It is only for debugging purposes!
+ *
+ * @param handler Handler.
+ *
+ * @retval -ENOTSUP if feature is disabled.
+ * @retval 0 on success.
+ */
+int spm_set_ns_fatal_error_handler(spm_ns_on_fatal_error_t handler);
+
+/** @brief Call non-secure fatal error handler.
+ *
+ * Must be called from fatal error handler.
+ */
+void spm_ns_fatal_error_handler(void);
 
 #ifdef __cplusplus
 }

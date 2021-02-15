@@ -19,6 +19,13 @@ if (CONFIG_SPM)
 
   set(spm_CONFIG_SPM_SECURE_SERVICES ${CONFIG_SPM_SECURE_SERVICES})
 
+  if (CONFIG_SPM_NS_DEBUG_LOGS_DUMP)
+      add_overlay_config(
+        spm
+        ${NRF_DIR}/samples/spm/spm_ns_debug_logs_dump.conf
+        )
+  endif()
+
   add_child_image(
     NAME spm
     SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/spm

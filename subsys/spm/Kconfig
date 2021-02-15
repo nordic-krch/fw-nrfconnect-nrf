@@ -64,6 +64,7 @@ config SPM_SHARE_CONSOLE_UART
 endif #IS_SPM
 
 if IS_SPM || SPM
+
 config SPM_SECURE_SERVICES
 	bool "Enable secure services"
 	default y if SPM
@@ -75,6 +76,21 @@ config SPM_SECURE_SERVICES
 	  Note: Please set this and SPM_SERVICE_* configs from the app, instead
 	  of the SPM. This ensures that the values are in sync between the two
 	  images.
+
+config SPM_NS_DEBUG_LOGS_DUMP
+	bool "Enable dumping non-secure logs on secure fault"
+	help
+	  When enabled secure fault handler is calling non-secure function to
+	  synchronously dump all pending logs. It must be enabled in spm and
+	  in non-secure application. Feature is only for debugging purposes and
+	  is considered a security violation. SPM_SHARE_CONSOLE_UART must be
+	  enabled in spm.
+
+if SPM_NS_DEBUG_LOGS_DUMP
+comment "*** WARNING ***"
+comment "SPM_NS_DEBUG_LOGS_DUMP can only be used for debugging"
+endif
+
 endif #IS_SPM || SPM
 
 if SPM_SECURE_SERVICES
