@@ -12,6 +12,8 @@
 #include <drivers/gpio.h>
 #include <hal/nrf_spu.h>
 #include <arch/arm/aarch32/irq.h>
+#include <drivers/uart.h>
+#include <spm.h>
 #include "spm_internal.h"
 
 #if !defined(CONFIG_ARM_SECURE_FIRMWARE)
@@ -252,7 +254,7 @@ static bool usel_or_split(uint8_t id)
 	return present && (usel || split);
 }
 
-static int spm_config_peripheral(uint8_t id, bool dma_present)
+static int config_peripheral(uint8_t id, bool dma_present, bool lock)
 {
 	/* Set a peripheral to Non-Secure state, if
 	 * - it is present
@@ -268,7 +270,7 @@ static int spm_config_peripheral(uint8_t id, bool dma_present)
 	if (usel_or_split(id)) {
 		NRF_SPU->PERIPHID[id].PERM = PERIPH_PRESENT | PERIPH_NONSEC |
 			(dma_present ? PERIPH_DMA_NOSEP : 0) |
-			PERIPH_LOCK;
+			(lock ? PERIPH_LOCK : 0);
 	}
 
 	/* Even for non-present peripherals we force IRQs to be routed
@@ -276,6 +278,16 @@ static int spm_config_peripheral(uint8_t id, bool dma_present)
 	 */
 	irq_target_state_set(id, IRQ_TARGET_STATE_NON_SECURE);
 	return 0;
+}
+
+static int spm_config_peripheral(uint8_t id, bool dma_present)
+{
+	return config_peripheral(id, dma_present, true);
+}
+
+static int spm_config_unlocked_peripheral(uint8_t id, bool dma_present)
+{
+	return config_peripheral(id, dma_present, false);
 }
 
 static void spm_dppi_configure(uint32_t mask)
@@ -544,8 +556,11 @@ void spm_jump(void)
 		 */
 
 		/* Configure UARTE0 as non-secure */
-		spm_config_peripheral(
-			NRFX_PERIPHERAL_ID_GET(NRF_UARTE0), 0);
+		uint8_t uart_id = NRFX_PERIPHERAL_ID_GET(NRF_UARTE0);
+
+		IS_ENABLED(CONFIG_SPM_SHARE_CONSOLE_UART) ?
+			spm_config_unlocked_peripheral(uart_id, 0) :
+			spm_config_peripheral(uart_id, 0);
 
 		__DSB();
 		__ISB();
@@ -567,3 +582,77 @@ void spm_config(void)
 	spm_config_sram();
 	spm_config_peripherals();
 }
+
+#if CONFIG_SPM_SHARE_CONSOLE_UART
+
+struct spm_uart_config {
+	const struct device *uart;
+	NRF_UARTE_Type *regs;
+};
+
+/** @brief Change state of the peripheral.
+ *
+ * @param id Peripheral ID.
+ *
+ * @param secure If true peripheral will be set as secure. Otherwise it is
+ * reconfigured to non-secure.
+ *
+ * @retval true if peripheral was previously configured as secure.
+ * @retval false if peripheral was previously configured as non-secure.
+ */
+static bool spm_periph_reconf(uint8_t id, bool secure)
+{
+	bool prev_sec_state = (NRF_SPU->PERIPHID[id].PERM & PERIPH_SEC);
+
+	NRF_SPU->PERIPHID[id].PERM = secure ?
+			(PERIPH_DMASEC | PERIPH_SEC) : PERIPH_NONSEC;
+
+	return prev_sec_state;
+}
+
+/** @brief Poll out with switching to secure state and restoring previous state.
+ *
+ * This approach can be used to share single UARTE instance with secure and
+ * non-secure. In order to allow that LOCK bit must not be set in UARTE PERM
+ * configuration.
+ *
+ * Note! Only for debugging purposes.
+ */
+static void poll_out(const struct device *dev, unsigned char c)
+{
+	const struct spm_uart_config *cfg = (const struct spm_uart_config *)dev->config;
+	uint8_t id = NRFX_PERIPHERAL_ID_GET(cfg->regs);
+	bool sec;
+
+	sec  = spm_periph_reconf(id, true);
+	uart_poll_out(cfg->uart, c);
+	spm_periph_reconf(id, sec);
+}
+
+static const struct uart_driver_api spm_uart_api = {
+	.poll_out = poll_out,
+};
+
+#define DT_DRV_COMPAT nordic_nrf_spm_uart
+
+BUILD_ASSERT(DT_SAME_NODE(DT_CHOSEN(zephyr_console), DT_NODELABEL(spm_uart)),
+		"Wrong console chosen, zephyr,console must be set to spm_uart in the overlay.");
+
+static const struct spm_uart_config spm_uart_config = {
+	.uart = DEVICE_DT_GET(DT_BUS(DT_NODELABEL(spm_uart))),
+	.regs = (NRF_UARTE_Type *)DT_REG_ADDR(DT_BUS(DT_NODELABEL(spm_uart)))
+};
+
+static int spm_uart_init(const struct device *dev)
+{
+	return 0;
+}
+
+DEVICE_DEFINE(spm_uart, "SPM_UART", spm_uart_init, device_pm_control_nop,
+	      NULL, &spm_uart_config,
+	      PRE_KERNEL_1, CONFIG_KERNEL_INIT_PRIORITY_DEVICE,
+	      &spm_uart_api);
+#else /* CONFIG_SPM_SHARE_CONSOLE_UART */
+BUILD_ASSERT(!(DT_SAME_NODE(DT_CHOSEN(zephyr_console), DT_NODELABEL(spm_uart))),
+		"Wrong console chosen, see device tree configuration.");
+#endif /* CONFIG_SPM_SHARE_CONSOLE_UART */

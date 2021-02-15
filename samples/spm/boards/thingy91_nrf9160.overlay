@@ -1,0 +1,24 @@
+/* SPDX-License-Identifier: LicenseRef-Nordic-5-Clause */
+
+/* Uncomment if CONFIG_SPM_SHARE_CONSOLE_UART is enabled.
+ * spm_uart is a thin wrapper around standard uart that sets UARTE peripheral
+ * to secure state before polling out and restores previous state after polling
+ * out a byte.
+ */
+/*
+/ {
+	chosen {
+		zephyr,console=&spm_uart;
+	};
+};
+*/
+
+&uart0 {
+	status = "okay";
+
+	spm_uart: nrf-spm-uart {
+		compatible = "nordic,nrf-spm-uart";
+		status = "okay";
+		label = "SPM_UART";
+	};
+};
