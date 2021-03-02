@@ -24,6 +24,10 @@ if (CONFIG_SPM)
         spm
         ${NRF_DIR}/samples/spm/spm_ns_debug_logs_dump.conf
         )
+      add_overlay_devicetree(
+        spm
+        ${NRF_DIR}/samples/spm/uart.overlay
+        )
   endif()
 
   add_child_image(
