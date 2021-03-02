@@ -20,17 +20,29 @@ function(get_board_without_ns_suffix board_in board_out)
   endif()
 endfunction()
 
-# Add a kconfig overlay file to a child image.
+# Append a value to a variable prefixed with a child image name.
+# This can be used by a parent image to modify the variables passed to its
+# child images. This must be invoked before 'add_child_image(image)'
+function(child_image_append_conf image val type)
+  set(old_conf ${${image}_${type}})
+  string(FIND "${old_conf}" "${val}" found)
+  if (${found} EQUAL -1)
+    set(${image}_${type} "${old_conf} ${val}" CACHE INTERNAL "")
+  endif()
+endfunction()
+
+# Add a devicetree overlay file to a child image.
+# This can be used by a parent image to add devicetree overlays to its child
+# images. This must be invoked before 'add_child_image(image)'
+function(add_overlay_devicetree image overlay_file)
+  child_image_append_conf(${image} ${overlay_file} DTC_OVERLAY_FILE)
+endfunction()
+
+# Add a kconfig fragment to a child image.
 # This can be used by a parent image to set kconfig values in its child images.
 # This must be invoked before 'add_child_image(image)'
 function(add_overlay_config image overlay_file)
-  set(old_conf ${${image}_OVERLAY_CONFIG})
-  string(FIND "${old_conf}" "${overlay_file}" found)
-  if (${found} EQUAL -1)
-    set(${image}_OVERLAY_CONFIG
-      "${old_conf} ${overlay_file}"
-      CACHE INTERNAL "")
-  endif()
+  child_image_append_conf(${image} ${overlay_file} OVERLAY_CONFIG)
 endfunction()
 
 # Add a partition manager configuration file to the build.
