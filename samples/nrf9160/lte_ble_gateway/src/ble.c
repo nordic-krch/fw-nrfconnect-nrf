@@ -163,7 +163,7 @@ void scan_connecting_error(struct bt_scan_device_info *device_info)
 {
 	printk("Connection to peer failed!\n");
 }
-
+#if 0
 BT_SCAN_CB_INIT(scan_cb, scan_filter_match, NULL, scan_connecting_error, NULL);
 
 static void scan_start(void)
@@ -204,7 +204,70 @@ static void scan_start(void)
 
 	printk("Scanning...\n");
 }
+#endif
+static void scan_filter_no_match(struct bt_scan_device_info *device_info,bool connectable)
+{
 
+    static int n_call = 0;
+    static int n_conn = 0;
+    static int n_noconn = 0;
+
+    if(!connectable){
+        n_noconn++;
+    } else {
+        n_conn++;
+    }
+
+    n_call++;
+
+    if(!(n_call % 100)) {
+        printk("No match: %d | Conn: %d | Not conn: %d\n", n_call, n_conn, n_noconn);
+    }
+
+}
+
+BT_SCAN_CB_INIT(scan_cb, scan_filter_match, scan_filter_no_match,scan_connecting_error, NULL);
+
+//BT_SCAN_CB_INIT(scan_cb, scan_filter_match, NULL, scan_connecting_error, NULL);
+
+static void scan_start(void)
+{
+    int err;
+
+    struct bt_le_scan_param scan_param = {
+        .type = BT_LE_SCAN_TYPE_ACTIVE,
+        .options = BT_LE_SCAN_OPT_NONE,
+        .interval = 0x0010,
+        .window = 0x0010,
+    };
+
+    struct bt_scan_init_param scan_init = {
+        .connect_if_match = 1,
+        .scan_param = &scan_param,
+        .conn_param = BT_LE_CONN_PARAM_DEFAULT,
+    };
+
+    bt_scan_init(&scan_init);
+    bt_scan_cb_register(&scan_cb);
+
+    err = bt_scan_filter_add(BT_SCAN_FILTER_TYPE_UUID, BT_UUID_THINGY);
+    if (err) {
+        printk("Scanning filters cannot be set\n");
+        return;
+    }
+
+    err = bt_scan_filter_enable(BT_SCAN_UUID_FILTER, false);
+    if (err) {
+        printk("Filters cannot be turned on\n");
+    }
+
+    err = bt_scan_start(BT_SCAN_TYPE_SCAN_ACTIVE);
+    if (err) {
+        printk("Scanning failed to start, err %d\n", err);
+    }
+
+    printk("Scanning...\n");
+}
 static void ble_ready(int err)
 {
 	printk("Bluetooth ready\n");
