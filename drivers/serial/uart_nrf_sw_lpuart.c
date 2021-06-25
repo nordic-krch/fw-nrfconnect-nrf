@@ -13,9 +13,9 @@
 #include <sys/onoff.h>
 #include <drivers/clock_control/nrf_clock_control.h>
 
-#define USE_SENSE 0
-#define PIN_INIT_IRQ_LEVEL(req)  USE_SENSE ? \
-	GPIO_INT_LEVEL_HIGH : (req ? GPIO_INT_EDGE_FALLING : GPIO_INT_EDGE_RISING)
+#define DEBUG_PIN_0 -1//11
+#define PIN_SET(pin) if (pin > 0) nrf_gpio_pin_set(pin)
+#define PIN_CLEAR(pin) if (pin > 0) nrf_gpio_pin_clear(pin)
 
 LOG_MODULE_REGISTER(lpuart, CONFIG_NRF_SW_LPUART_LOG_LEVEL);
 
@@ -296,6 +296,7 @@ static void rdy_pin_blink(struct lpuart_data *data)
 	__ASSERT(err == NRFX_SUCCESS, "Unexpected err: %08x/%d", err, err);
 
 	/* Drive low for a moment */
+	/*nrf_gpio_cfg_output(11); nrf_gpio_pin_set(11);*/
 	nrf_gpio_cfg(data->rdy_pin,
 		     NRF_GPIO_PIN_DIR_OUTPUT,
 		     NRF_GPIO_PIN_INPUT_CONNECT,
@@ -303,15 +304,17 @@ static void rdy_pin_blink(struct lpuart_data *data)
 		     NRF_GPIO_PIN_S0S1,
 		     NRF_GPIO_PIN_NOSENSE);
 
-	nrf_gpio_cfg(data->rdy_pin,
-		     NRF_GPIO_PIN_DIR_INPUT,
-		     NRF_GPIO_PIN_INPUT_DISCONNECT,
-		     NRF_GPIO_PIN_NOPULL,
-		     NRF_GPIO_PIN_S0S1,
-		     NRF_GPIO_PIN_NOSENSE);
 	err = nrfx_gpiote_pin_int_config(data->rdy_pin, int_flags, NULL, NULL);
 	__ASSERT(err == NRFX_SUCCESS, "Unexpected err: %08x/%d", err, err);
 
+	nrf_gpio_cfg(data->rdy_pin,
+		     NRF_GPIO_PIN_DIR_INPUT,
+		     NRF_GPIO_PIN_INPUT_CONNECT,
+		     NRF_GPIO_PIN_NOPULL,
+		     NRF_GPIO_PIN_S0S1,
+		     NRF_GPIO_PIN_NOSENSE);
+
+	/*nrf_gpio_pin_clear(11);*/
 }
 
 /* Function enables RX, after that it informs transmitter about readiness by
@@ -327,9 +330,11 @@ static void activate_rx(struct lpuart_data *data)
 		return;
 	}
 
+	//nrf_gpio_pin_set(13);
 	err = uart_rx_enable(data->uart, data->rx_buf,
 				data->rx_len, data->rx_timeout);
 	__ASSERT(err == 0, "RX: Enabling failed (err:%d)", err);
+	//nrf_gpio_pin_clear(13);
 
 	/* Ready. Confirm by toggling the pin. */
 	rdy_pin_blink(data);
@@ -388,18 +393,19 @@ static void deactivate_rx(struct lpuart_data *data)
 		__ASSERT_NO_MSG(err >= 0);
 	}
 
-	rdy_pin_idle(data);
-
 	/* abort rx */
 	data->rx_state = RX_TO_IDLE;
 	err = uart_rx_disable(data->uart);
 	if (err < 0 && err != -EFAULT) {
 		LOG_ERR("RX: Failed to disable (err: %d)", err);
+	} else if (err == -EFAULT) {
+		LOG_ERR("rx disable failed.");
 	}
 }
 
 static void tx_complete(struct lpuart_data *data)
 {
+	LOG_DBG("TX completed, pin idle");
 	pend_req_pin_idle(data);
 	data->tx_buf = NULL;
 	data->tx_active = false;
@@ -459,16 +465,17 @@ static void rdy_pin_handler(nrfx_gpiote_pin_t pin,
 		__ASSERT_NO_MSG(data->rx_state != RX_ACTIVE);
 
 		LOG_DBG("RX: Request detected.");
+		rdy_pin_suspend(data);
 		if (data->rx_state == RX_IDLE) {
 			start_rx_activation(data);
-		} else {
-			rdy_pin_suspend(data);
 		}
 	} else {
 		__ASSERT_NO_MSG(data->rx_state == RX_ACTIVE);
 
 		LOG_DBG("RX: End detected.");
+		PIN_SET(DEBUG_PIN_0);
 		deactivate_rx(data);
+		PIN_CLEAR(DEBUG_PIN_0);
 	}
 }
 
@@ -521,6 +528,13 @@ static void uart_callback(const struct device *uart, struct uart_event *evt,
 		LOG_DBG("RX: Ready buf:%p, offset: %d,len: %d",
 		     evt->data.rx.buf, evt->data.rx.offset, evt->data.rx.len);
 		user_callback(dev, evt);
+		if (data->rx_state == RX_BLOCKED) {
+			/* If order of rx_rdy and rx_disabled events were swapped
+			 * call rx_buf_req now.
+			 */
+			evt->type = UART_RX_BUF_REQUEST;
+			user_callback(dev, evt);
+		}
 		break;
 
 	case UART_RX_BUF_REQUEST:
@@ -533,26 +547,38 @@ static void uart_callback(const struct device *uart, struct uart_event *evt,
 		break;
 
 	case UART_RX_BUF_RELEASED:
+		LOG_DBG("Rx buf released");
 		user_callback(dev, evt);
 		break;
 
 	case UART_RX_DISABLED:
+	{
+		bool call_cb;
 		LOG_DBG("Rx disabled");
 		__ASSERT_NO_MSG((data->rx_state != RX_IDLE) &&
 			 (data->rx_state != RX_OFF));
 
 		if (data->rx_state == RX_TO_IDLE) {
+			call_cb = true;
 			data->rx_state = RX_BLOCKED;
 			/* Need to request new buffer since uart was disabled */
 			evt->type = UART_RX_BUF_REQUEST;
+		} else if (data->rx_state == RX_ACTIVE) {
+			/* Evt order flipped. RX_RDY will follow. */
+			LOG_WRN("uart events flipped.");
+			data->rx_state = RX_BLOCKED;
+			call_cb = false;
 		} else {
 			data->rx_buf = NULL;
 			data->rx_state = RX_OFF;
+			call_cb = true;
 		}
 
 		user_callback(dev, evt);
 		break;
+	}
 	case UART_RX_STOPPED:
+		LOG_DBG("Rx stopped");
 		user_callback(dev, evt);
 		break;
 	}
@@ -681,6 +707,7 @@ static int api_rx_buf_rsp(const struct device *dev, uint8_t *buf, size_t len)
 	__ASSERT_NO_MSG((data->rx_state != RX_OFF) &&
 		 (data->rx_state != RX_TO_OFF));
 
+	LOG_DBG("buf rsp, state:%d", data->rx_state);
 	if (data->rx_state == RX_TO_IDLE || data->rx_state == RX_BLOCKED) {
 		data->rx_buf = buf;
 		data->rx_len = len;
