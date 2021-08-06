@@ -7,13 +7,16 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <mock_modules_common.h>
+#include <mock_event_manager.h>
 #include "app_module_event.h"
+#include "gps_module_event.h"
+#include "data_module_event.h"
 
 extern struct event_listener __event_listener_gps_module;
 
-//** STUFF TO AVOID LINKER ERRORS**/
+#define GPS_MODULE_EVT_HANDLER(eh) __event_listener_gps_module.notification(eh)
 
-//#include "event_manager.h"
+/* Dummy functions and objects. */
 
 void sys_reboot(int reason)
 {
@@ -33,19 +36,19 @@ const struct event_type __event_type_app_module_event;
 const struct event_type __event_type_data_module_event;
 const struct event_type __event_type_util_module_event;
 
-/** STUFF TO AVOID LINER ERRORS END **/
+/** Dummy functions and objects - End.  **/
 
 /* Suite teardown shall finalize with mandatory call to generic_suiteTearDown. */
 extern int generic_suiteTearDown(int num_failures);
 
-//extern bool gps_module_event_handler(struct event_header *);
 
 int test_suiteTearDown(int num_failures)
 {
 	return generic_suiteTearDown(num_failures);
 }
 
-void test_app_evt_start(void)
+
+static void setup_gps_module_in_init_state(void)
 {
 	struct app_module_event *app_module_event = new_app_module_event();
 
@@ -59,13 +62,54 @@ void test_app_evt_start(void)
 
 	__wrap_module_start_ExpectAndReturn(&expected_module_data, 0);
 
-	bool ret = __event_listener_gps_module.notification(
-		(struct event_header *)app_module_event);
+	bool ret = GPS_MODULE_EVT_HANDLER((struct event_header *)app_module_event);
+	TEST_ASSERT_EQUAL(0, ret);
 
 	free(app_module_event);
-
-	TEST_ASSERT_EQUAL(0, ret);
 }
+
+static void setup_gps_module_in_running_state()
+{
+	setup_gps_module_in_init_state();
+
+	struct data_module_event *data_module_event = new_data_module_event();
+
+	data_module_event->type = DATA_EVT_CONFIG_INIT;
+	data_module_event->data.cfg.gps_timeout = 60;
+
+	bool ret = GPS_MODULE_EVT_HANDLER((struct event_header *)data_module_event);
+	TEST_ASSERT_EQUAL(0, ret);
+
+	free(data_module_event);
+}
+
+/* Test whether sending a APP_EVT_DATA_GET event to the GPS module generates
+ * the GPS_EVT_ACTIVE event, when the GPS module is in the running state. */
+void test_gps_start(void)
+{
+	/* Pre-condition. */
+	setup_gps_module_in_running_state();
+
+	/* Setup expectations. */
+	struct gps_module_event *exp_event = new_gps_module_event();
+	exp_event->type = GPS_EVT_ACTIVE;
+
+	__wrap__event_submit_Expect((struct event_header *)exp_event);
+
+	/* Stimulus. */
+	struct app_module_event *app_module_event = new_app_module_event();
+
+	app_module_event->type = APP_EVT_DATA_GET;
+	app_module_event->count = 1;
+	app_module_event->data_list[0] = APP_DATA_GNSS;
+
+	bool ret = GPS_MODULE_EVT_HANDLER((struct event_header *)app_module_event);
+	TEST_ASSERT_EQUAL(0, ret);
+
+	/* Cleanup */
+	free(app_module_event);
+}
+
 
 /* It is required to be added to each test. That is because unity is using
  * different main signature (returns int) and zephyr expects main which does
