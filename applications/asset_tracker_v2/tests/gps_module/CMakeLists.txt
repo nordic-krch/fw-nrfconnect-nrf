@@ -15,6 +15,8 @@ test_runner_generate(src/gps_module_test.c)
 # create mock
 cmock_handle(${ZEPHYR_BASE}/../nrf/include/event_manager.h )
 cmock_handle(${ZEPHYR_BASE}/../nrf/include/date_time.h )
+cmock_handle(${ZEPHYR_BASE}/../nrf/include/drivers/gps.h )
+cmock_handle(${ZEPHYR_BASE}/include/device.h )
 cmock_handle(${ZEPHYR_BASE}/../nrf/applications/asset_tracker_v2/src/modules/modules_common.h )
 
 

@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <mock_modules_common.h>
 #include <mock_event_manager.h>
+#include <mock_gps.h>
 #include "app_module_event.h"
 #include "gps_module_event.h"
 #include "data_module_event.h"
