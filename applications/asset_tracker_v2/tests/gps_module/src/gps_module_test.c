@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <mock_modules_common.h>
 #include <mock_event_manager.h>
-#include <mock_gps.h>
+#include <drivers/mock_gps.h>
 #include "app_module_event.h"
 #include "gps_module_event.h"
 #include "data_module_event.h"
@@ -88,6 +88,7 @@ static void setup_gps_module_in_running_state()
  * the GPS_EVT_ACTIVE event, when the GPS module is in the running state. */
 void test_gps_start(void)
 {
+	__wrap_gps_start_IgnoreAndReturn(0);
 	/* Pre-condition. */
 	setup_gps_module_in_running_state();
 
@@ -120,5 +121,6 @@ extern int unity_main(void);
 
 void main(void)
 {
+	__wrap_gps_init_IgnoreAndReturn(0);
 	(void)unity_main();
 }
