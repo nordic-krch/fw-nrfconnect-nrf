@@ -1,0 +1,2 @@
+config NRF5_SDK_IRQ_CONNECT_GPIOTE
+    bool

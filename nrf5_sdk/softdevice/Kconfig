@@ -1,0 +1,105 @@
+menu "Softdevice"
+
+config S140
+	bool "S140"
+	select SOFTDEVICE
+	select SOFTDEVICE_BLE
+
+config SOFTDEVICE
+	bool
+
+config SOFTDEVICE_BLE
+	bool
+
+choice NRF_SDH_DISPATCH_MODEL
+	prompt "Dispatch model"
+	default NRF_SDH_DISPATCH_MODEL_INTERRUPT
+
+config NRF_SDH_DISPATCH_MODEL_INTERRUPT
+	bool "Interrupt"
+
+config NRF_SDH_DISPATCH_MODEL_APPSH
+	bool "App scheduler"
+
+config NRF_SDH_DISPATCH_MODEL_POLLING
+	bool "Polling"
+
+endchoice
+
+config NRF_SDH_CLOCK_LF_SRC
+	int "LF Clock"
+	default 1
+
+config NRF_SDH_CLOCK_LF_RC_CTIV
+	int "Calibration timer interval"
+	default 0
+
+config NRF_SDH_CLOCK_LF_RC_TEMP_CTIV
+	int "Calibration timer interval"
+	default 0
+
+config NRF_SDH_CLOCK_LF_ACCURACY
+	int "Accuracy"
+	default 0
+
+config NRF_SDH_REQ_OBSERVER_PRIO_LEVELS
+	int "Total number of priority levels for request observers"
+	default 2
+
+config NRF_SDH_STATE_OBSERVER_PRIO_LEVELS
+	int "Total number of priority levels for state observers."
+	default 2
+
+config NRF_SDH_STACK_OBSERVER_PRIO_LEVELS
+	int "Total number of priority levels for stack event observers"
+	default 2
+
+config NRF_SDH_SOC_OBSERVER_PRIO_LEVELS
+	int "Number of Observer priority levels"
+	default 2
+
+config NRF_SDH_SOC_STACK_OBSERVER_PRIO
+	int "Stack Event Observers priorities"
+	default 0
+
+config NRF_SDH_BLE_PERIPHERAL_LINK_COUNT
+	int "Maximum number of peripheral links"
+	default 0
+
+config NRF_SDH_BLE_CENTRAL_LINK_COUNT
+	int "Maximum number of central links"
+	default 0
+
+config NRF_SDH_BLE_TOTAL_LINK_COUNT
+	int "Maximum number of total concurrent connections using the default configuration"
+	default 1
+
+config NRF_SDH_BLE_GAP_EVENT_LENGTH
+	int "GAP event length"
+	default 6
+
+config NRF_SDH_BLE_GATT_MAX_MTU_SIZE
+	int "Static maximum MTU size"
+	default 23
+
+config NRF_SDH_BLE_GATTS_ATTR_TAB_SIZE
+	int "Attribute Table size in bytes"
+	default 1408
+	help
+	  The size must be a multiple of 4.
+config NRF_SDH_BLE_VS_UUID_COUNT
+	int "The number of vendor-specific UUIDs"
+	default 0
+
+config NRF_SDH_BLE_SERVICE_CHANGED
+	bool "Include the Service Changed characteristic in the Attribute Table"
+
+config NRF_SDH_BLE_STACK_OBSERVER_PRIO
+	int "Stack Event Observers priorities"
+	default 0
+
+config NRF_SDH_BLE_OBSERVER_PRIO_LEVELS
+	int "Total number of priority levels for BLE observers"
+	default 4
+
+endmenu

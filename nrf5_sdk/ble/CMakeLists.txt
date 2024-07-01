@@ -1,0 +1,4 @@
+zephyr_library()
+zephyr_library_sources_ifdef(CONFIG_NRF5_BLE ble_advdata.c)
+zephyr_library_sources_ifdef(CONFIG_NRF5_BLE ble_srv_common.c)
+

@@ -1,0 +1,12 @@
+menuconfig NRF5_SDK
+	bool "nRF5 SDK"
+
+if NRF5_SDK
+
+config MULTITHREADING
+    default n
+
+rsource "ble/Kconfig"
+rsource "softdevice/Kconfig"
+rsource "libraries/Kconfig"
+endif

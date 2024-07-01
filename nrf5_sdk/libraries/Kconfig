@@ -1,0 +1,14 @@
+config BSP_BTN_BLE_OBSERVER_PRIO
+    int "BSP button BLE Observer priority"
+    default 1
+
+config APP_BUTTON
+    select NRF5_SDK_IRQ_CONNECT_GPIOTE
+    select NRFX_GPIOTE
+    bool "App button"
+
+config APP_BUTTON_HIGH_ACCURACY_ENABLED
+    bool "App button high accuracy"
+    depends on APP_BUTTON
+
+rsource "Kconfig.irq_connect"

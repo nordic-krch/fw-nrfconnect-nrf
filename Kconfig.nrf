@@ -26,6 +26,7 @@ if BUILD_WITH_TFM
 rsource "modules/trusted-firmware-m/Kconfig.psa.defconfig"
 endif # BUILD_WITH_TFM
 
+
 menu "Nordic nRF Connect"
 
 # Hides child parent configuration options
@@ -129,3 +130,5 @@ rsource "ext/Kconfig"
 rsource "tests/Kconfig"
 
 endmenu
+
+rsource "nrf5_sdk/Kconfig"

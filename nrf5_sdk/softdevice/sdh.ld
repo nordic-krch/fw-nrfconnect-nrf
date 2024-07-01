@@ -1,0 +1,5 @@
+ITERABLE_SECTION_ROM(sdh_req_observers, 4)
+ITERABLE_SECTION_ROM(sdh_state_observers, 4)
+ITERABLE_SECTION_ROM(sdh_stack_observers, 4)
+ITERABLE_SECTION_ROM(sdh_soc_observers, 4)
+ITERABLE_SECTION_ROM(sdh_ble_observers, 4)

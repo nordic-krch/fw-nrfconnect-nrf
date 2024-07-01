@@ -1,0 +1,4 @@
+menuconfig NRF5_BLE
+	bool "BLE"
+	default y if SOFTDEVICE_BLE
+
