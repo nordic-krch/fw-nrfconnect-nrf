@@ -18,6 +18,8 @@ manifest:
   remotes:
     # nRF Connect SDK GitHub organization.
     # NCS repositories are hosted here.
+    - name: krch
+      url-base: https://github.com/nordic-krch
     - name: ncs
       url-base: https://github.com/nrfconnect
     # Third-party repository sources:
@@ -62,8 +64,9 @@ manifest:
     # https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/zephyr/introduction/index.html
     # https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/zephyr/guides/modules.html
     - name: zephyr
-      repo-path: sdk-zephyr
-      revision: ded7e9fcce1ea756b8f26e652248d026ed732be7
+      remote: krch
+      repo-path: fw-nrfconnect-zephyr
+      revision: nrf5_sdk
       import:
         # In addition to the zephyr repository itself, NCS also
         # imports the contents of zephyr/west.yml at the above
