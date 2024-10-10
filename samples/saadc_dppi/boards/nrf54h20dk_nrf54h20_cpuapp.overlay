@@ -27,9 +27,9 @@
 &dppic130 {
 	compatible = "nordic,nrf-dppic-global";
 	/* Main domain DPPIC. One channel needed to connect DPPIC133 with DPPIC131. */
-	owned-channels = <0>;
-	sink-channels = <0>;
-	source-channels = <0>;
+	owned-channels = <1>;
+	sink-channels = <1>;
+	source-channels = <1>;
 	status = "okay";
 };
 
@@ -37,8 +37,8 @@
 	compatible = "nordic,nrf-dppic-global";
 	/* DPPIC in domain where TIMER131 is located. Single channel for signal
 	   goes out of that domain. */
-	owned-channels = <0>;
-	source-channels = <0>;
+	owned-channels = <1>;
+	source-channels = <1>;
 	status = "okay";
 };
 
