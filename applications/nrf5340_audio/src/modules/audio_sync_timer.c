@@ -234,7 +234,7 @@ static int audio_sync_timer_init(void)
 	nrfx_gppi_ep_attach(tep1, dppi_handle_rtc_start);
 	nrf_ipc_receive_config_set(NRF_IPC, AUDIO_SYNC_TIMER_NET_APP_IPC_EVT_CHANNEL,
 				   NRF_IPC_CHANNEL_4);
-	nrfx_gppi_conn_enable(dppi_handle_curr_time_capture);
+	nrfx_gppi_conn_enable(dppi_handle_rtc_start);
 
 	/* Initialize functionality for synchronization between RTC and TIMER */
 	eep0 = nrfx_rtc_event_address_get(&audio_sync_lf_timer_instance, NRF_RTC_EVENT_TICK);
