@@ -150,11 +150,17 @@ int ppi_trace_dppi_ch_trace(uint32_t pin, uint32_t dppi_ch, NRF_DPPIC_Type *p_dp
 		.domain_id = nrfx_gppi_domain_id_get((uint32_t)p_dppi),
 		.channel = dppi_ch
 	};
+	int err;
 
-	if (nrfx_gppi_ext_conn_alloc(resource.domain_id, dst_domain, &handle, &resource) < 0) {
+	err = nrfx_gppi_ext_conn_alloc(resource.domain_id, dst_domain, &handle, &resource);
+	if (err == -ENOTSUP) {
+		/* System with single DPPI instance. Just attach to the channel. */
+		nrfx_gppi_ep_attach(tep, dppi_ch);
+	} else if (err < 0) {
 		LOG_ERR("Failed to allocate GPPI channel.");
 		return -ENOMEM;
 	}
+
 	nrfx_gppi_ep_attach(tep, handle);
 	nrfx_gppi_conn_enable(handle);
 
