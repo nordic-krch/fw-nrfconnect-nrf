@@ -21,6 +21,7 @@ rsource "net/Kconfig"
 rsource "regulator/Kconfig"
 rsource "sensor/Kconfig"
 rsource "serial/Kconfig"
+rsource "sensor_engine/Kconfig"
 
 config HPF
 	bool

@@ -1,0 +1,13 @@
+#
+# Copyright (c) 2025 Nordic Semiconductor
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+
+config NRF_SENSOR_ENGINE
+	bool "Sensor engine"
+	select NRFX_GPPI
+	select NRFX_TIMER
+	help
+	  Sensor engine allows to perform periodic SPI operations (like reading the
+	  sensor data) offloading CPU and reducing power consumption.
