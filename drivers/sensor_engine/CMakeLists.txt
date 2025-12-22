@@ -4,4 +4,5 @@
 # SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
 #
 
+zephyr_library_sources_ifdef(CONFIG_NRF_SENSOR_ENGINE sensor_engine.c)
 zephyr_library_sources_ifdef(CONFIG_NRF_SENSOR_ENGINE ppi_seq.c)
