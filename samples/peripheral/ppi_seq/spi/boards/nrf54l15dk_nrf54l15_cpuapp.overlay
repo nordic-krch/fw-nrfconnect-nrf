@@ -1,0 +1,72 @@
+/*
+ * Copyright (c) 2024 Nordic Semiconductor
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+&pinctrl {
+	uart20_alt_default: uart20_alt_default {
+		group1 {
+			psels = <NRF_PSEL(UART_TX, 1, 4)>;
+		};
+
+		group2 {
+			psels = <NRF_PSEL(UART_RX, 1, 5)>;
+			bias-pull-up;
+		};
+	};
+
+	uart20_alt_sleep: uart20_alt_sleep {
+		group1 {
+			psels = <NRF_PSEL(UART_TX, 1, 4)>,
+				<NRF_PSEL(UART_RX, 1, 5)>;
+			low-power-enable;
+		};
+	};
+
+	spi22_default_alt: spi22_default_alt {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 1, 13)>,
+				<NRF_PSEL(SPIM_MISO, 1, 11)>,
+				<NRF_PSEL(SPIM_MOSI, 1, 9)>;
+		};
+	};
+
+	spi22_sleep_alt: spi22_sleep_alt {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 1, 13)>,
+				<NRF_PSEL(SPIM_MISO, 1, 11)>,
+				<NRF_PSEL(SPIM_MOSI, 1, 9)>;
+			low-power-enable;
+		};
+	};
+};
+
+cnt_timer: &timer21 {
+	status = "reserved";
+};
+
+trig_timer: &timer22 {
+	status = "reserved";
+};
+
+sample_spi: &spi22 {
+	status = "okay";
+	pinctrl-0 = <&spi22_default_alt>;
+	pinctrl-1 = <&spi22_sleep_alt>;
+	pinctrl-names = "default", "sleep";
+	overrun-character = <0x00>;
+	cs-gpios = <&gpio1 14 GPIO_ACTIVE_LOW>;
+	zephyr,pm-device-runtime-auto;
+
+	dut_spi_dt: test-spi-dev@0 {
+		compatible = "vnd,spi-device";
+		reg = <0>;
+		spi-max-frequency = <DT_FREQ_M(16)>;
+	};
+};
+
+&uart20 {
+	pinctrl-0 = <&uart20_alt_default>;
+	pinctrl-1 = <&uart20_alt_sleep>;
+};
