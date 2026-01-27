@@ -1,0 +1,11 @@
+tests:
+  drivers.ppi_seq.spi:
+    depends_on: spi
+    tags:
+      - drivers
+      - spi
+    harness: ztest
+    harness_config:
+      fixture: gpio_spi_loopback
+    platform_allow:
+      - nrf54l15dk/nrf54l15/cpuapp
