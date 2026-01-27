@@ -1,0 +1,24 @@
+#
+# Copyright (c) 2026 Nordic Semiconductor
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+
+config PPI_SEQ
+	bool "PPI Sequencer"
+	select NRFX_GPPI
+	select NRFX_TIMER
+	help
+	  PPI sequencer is a module for periodically triggering hardware tasks
+	  (like SPI transfer) using PPI and timing source (GRTC, TIMER or RTC).
+
+config PPI_SEQ_SPIM
+	bool "SPIM transfers"
+	select NRFX_SPIM
+
+config PPI_SEQ_TWIM
+	bool "SPIM transfers"
+	select NRFX_TWIM
+
+config PPI_SEQ_MAX_PPI_HANDLES
+	def_int 8
