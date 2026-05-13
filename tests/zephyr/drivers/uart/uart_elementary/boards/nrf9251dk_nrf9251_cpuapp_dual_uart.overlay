@@ -51,7 +51,7 @@
 	};
 };
 
-dut: &uart131 {
+dut_aux: &uart131 {
 	status = "okay";
 	memory-regions = <&cpuapp_dma_region>;
 	pinctrl-0 = <&uart131_default_alt>;
@@ -61,7 +61,7 @@ dut: &uart131 {
 	zephyr,pm-device-runtime-auto;
 };
 
-dut_aux: &uart132 {
+dut: &uart132 {
 	status = "okay";
 	memory-regions = <&cpuapp_dma_region>;
 	pinctrl-0 = <&uart132_default_alt>;
