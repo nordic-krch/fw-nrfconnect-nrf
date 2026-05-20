@@ -22,7 +22,7 @@ static const struct gpio_dt_spec gpio_spec =
 	GPIO_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), gpios, 0);
 static const struct device *const uart_dev = DEVICE_DT_GET(DT_NODELABEL(dut));
 
-static const uint8_t tx_buf[] = {0x00, 0x00};
+static const uint8_t tx_buf[] = {0x00, 0x00, 0x00};
 
 #define PIN_STATE_SIZE 32768
 static uint8_t pin_state[PIN_STATE_SIZE] = {};
@@ -48,6 +48,16 @@ static void uart_fifo_callback(const struct device *dev, void *user_data)
 }
 #endif
 
+#if CONFIG_SOC_NRF54H20
+#define LED_PIN 0
+#define LED_PORT 9
+#elif CONFIG_SOC_NRF9251
+#define LED_PIN 0
+#define LED_PORT 2
+#else
+#error "not supported"
+#endif
+#define LED_PIN_PORT (32 * LED_PORT + LED_PIN)
 static void check_timing(uint32_t baudrate)
 {
 	uint64_t cycles_s_sys;
@@ -67,6 +77,7 @@ static void check_timing(uint32_t baudrate)
 	uint32_t uart_freq = NRF_PERIPH_GET_FREQUENCY(DT_NODELABEL(dut));
 	uint32_t accepted_deviation = CONFIG_TEST_ALLOWED_DEVIATION;
 
+	NRFX_CONCAT(NRF_P, LED_PORT)->RETAINCLR=BIT(LED_PIN);
 	/* Baudrate register has only top 16 bits implemented so if baudrate is
 	 * significantly lower than the peripheral frequency, accuracy of the baudrate
 	 * decreases.
@@ -108,6 +119,7 @@ static void check_timing(uint32_t baudrate)
 	start_index_count_zero = 0;
 	bit_diviation_mean = 0;
 	symbol_diviation_mean = 0;
+	nrf_gpio_cfg_output(LED_PIN_PORT);
 	for (uint32_t t = 0; t < REPEAT_NUMBER; ++t) {
 		/*
 		 * Send character
@@ -123,10 +135,22 @@ static void check_timing(uint32_t baudrate)
 		 * Check gpio
 		 */
 
+		uint32_t prev_state = 0;
 		key = irq_lock();
+
 		cycle_start_time = k_cycle_get_32();
 		for (uint32_t i = 0; i < PIN_STATE_SIZE; ++i) {
-			pin_state[i] = nrf_gpio_port_in_read(gpio_port) & pin_mask ? 1 : 0;
+			uint32_t state = nrf_gpio_port_in_read(gpio_port) & pin_mask ? 1 : 0;
+
+			if (prev_state == 0) {
+				NRFX_CONCAT(NRF_P,LED_PORT)->OUTSET=BIT(LED_PIN);
+				prev_state = 1;
+			} else {
+				NRFX_CONCAT(NRF_P,LED_PORT)->OUTCLR=BIT(LED_PIN);
+				prev_state = 0;
+			}
+
+			pin_state[i] = state;
 		}
 		cycle_stop_time = k_cycle_get_32();
 		irq_unlock(key);
@@ -221,7 +245,7 @@ ZTEST(uart_baudrate_test, test_09_4800)
 	check_timing(4800);
 }
 
-ZTEST(uart_baudrate_test, test_10_9600)
+ZTEST(_uart_baudrate_test, test_10_9600)
 {
 	check_timing(9600);
 }
@@ -245,7 +269,7 @@ ZTEST(uart_baudrate_test, test_14_57600)
 	check_timing(57600);
 }
 
-ZTEST(uart_baudrate_test, test_15_115200)
+ZTEST(_uart_baudrate_test, test_15_115200)
 {
 	check_timing(115200);
 }
@@ -316,4 +340,4 @@ static void *uart_baudrate_test_setup(void)
 	return NULL;
 }
 
-ZTEST_SUITE(uart_baudrate_test, NULL, uart_baudrate_test_setup, NULL, NULL, NULL);
+ZTEST_SUITE(_uart_baudrate_test, NULL, uart_baudrate_test_setup, NULL, NULL, NULL);
