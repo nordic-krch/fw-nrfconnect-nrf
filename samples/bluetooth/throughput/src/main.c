@@ -20,6 +20,7 @@
 #include <bluetooth/services/throughput.h>
 #include <bluetooth/scan.h>
 #include <bluetooth/gatt_dm.h>
+#include <zephyr/debug/cpu_load.h>
 
 #include <zephyr/shell/shell_uart.h>
 
@@ -413,6 +414,8 @@ static void throughput_received(const struct bt_throughput_metrics *met)
 
 static void throughput_send(const struct bt_throughput_metrics *met)
 {
+	int load = cpu_load_get(true);
+	printk("CPU load: %d.%d\n", load / 10, load % 10);
 	printk("\n[local] received %u bytes (%u KB)"
 		" in %u GATT writes at %u bps\n",
 		met->write_len, met->write_len / 1024,
@@ -622,6 +625,7 @@ int test_run(const struct shell *shell,
 
 	/* get cycle stamp */
 	stamp = k_uptime_get_32();
+	cpu_load_get(true);
 
 	while (true) {
 		err = bt_throughput_write(&throughput, dummy, sizeof(dummy));
@@ -637,7 +641,8 @@ int test_run(const struct shell *shell,
 
 	delta = k_uptime_delta(&stamp);
 
-	printk("\nDone\n");
+	int load = cpu_load_get(true);
+	printk("\nDone, CPU load: %d.%d\n", load / 10, load % 10);
 	printk("[local] sent %u bytes (%u KB) in %lld ms at %llu kbps\n",
 	       data, data / 1024, delta, ((uint64_t)data * 8 / delta));
 
