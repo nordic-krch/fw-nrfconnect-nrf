@@ -28,7 +28,7 @@ choice IPC_RADIO_BT_SER
 config IPC_RADIO_BT_HCI_IPC
 	bool "Bluetooth HCI serialization"
 	depends on IPC_SERVICE
-	depends on IPC_SERVICE_BACKEND_ICBMSG || IPC_SERVICE_BACKEND_RPMSG
+	depends on IPC_SERVICE_BACKEND_ICBMSG || IPC_SERVICE_BACKEND_RPMSG || IPC_SERVICE_BACKEND_ICMSG
 	depends on BT_HCI_RAW
 	help
 	  Use Bluetooth HCI serialization over ipc_service.

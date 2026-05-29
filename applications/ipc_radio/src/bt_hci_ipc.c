@@ -38,8 +38,11 @@
 #define MAX_IPC_BLOCKS DIV_ROUND_UP(IPC_MEM_SIZE, IPC_BUF_SIZE)
 #elif DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_bt_hci_ipc), zephyr_ipc_icbmsg)
 #define MAX_IPC_BLOCKS DT_PROP(DT_CHOSEN(zephyr_bt_hci_ipc), rx_blocks)
+#elif DT_NODE_HAS_COMPAT(DT_CHOSEN(zephyr_bt_hci_ipc), zephyr_ipc_icmsg)
+#define MAX_IPC_BLOCKS 20
+#define IPC_HCI_COPY_RX 1
 #else
-#error "IPC backends other than rpmsg or icbmsg are not supported."
+#error "IPC backends other than rpmsg, icbmsg or icmsg are not supported."
 #endif
 
 LOG_MODULE_DECLARE(ipc_radio, CONFIG_IPC_RADIO_LOG_LEVEL);
@@ -215,6 +218,19 @@ static void recv(const void *data, size_t len, void *priv)
 	LOG_INF("Received hci message of %u bytes.", len);
 	LOG_HEXDUMP_DBG(data, len, "HCI data:");
 
+#if defined(IPC_HCI_COPY_RX)
+	void *copy;
+
+	copy = k_malloc(len);
+	if (!copy) {
+		LOG_ERR("Failed to allocate RX buffer (%zu bytes).", len);
+		return;
+	}
+
+	memcpy(copy, data, len);
+	block.ptr = copy;
+	block.len = len;
+#else
 	block.ptr = data;
 	block.len = len;
 
@@ -222,6 +238,7 @@ static void recv(const void *data, size_t len, void *priv)
 	if (err) {
 		LOG_ERR("Failed to hold rx buffer: %d.", err);
 	}
+#endif
 
 	err = k_msgq_put(&ipc_block_queue, &block, K_NO_WAIT);
 	__ASSERT(err == 0, "Failed to put data into msgq: %d.", err);
@@ -262,12 +279,16 @@ static void queue_thread(void)
 			break;
 		}
 
+#if defined(IPC_HCI_COPY_RX)
+		k_free((void *)block.ptr);
+#else
 		err = ipc_service_release_rx_buffer(&hci_ept, (void *)block.ptr);
 		if (err < 0) {
 			LOG_ERR("Failed to release rx buffer: %d.", err);
 		} else {
 			LOG_DBG("Released rx buffer with ret %d.", err);
 		}
+#endif
 
 		if (buf) {
 			k_fifo_put(&tx_queue, buf);
