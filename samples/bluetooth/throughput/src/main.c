@@ -21,6 +21,8 @@
 #include <bluetooth/scan.h>
 #include <bluetooth/gatt_dm.h>
 #include <zephyr/debug/cpu_load.h>
+#include <zephyr/pm/device.h>
+#include <zephyr/pm/device_runtime.h>
 
 #include <zephyr/shell/shell_uart.h>
 
@@ -577,6 +579,43 @@ static int connection_configuration_set(const struct shell *shell,
 	return 0;
 }
 
+int stop_shell_uart(const struct shell *sh)
+{
+	static const struct device *uart = DEVICE_DT_GET(DT_CHOSEN(zephyr_shell_uart));
+	int pm_cnt = 0;
+	int rv;
+
+	if (IS_ENABLED(CONFIG_PM_DEVICE_RUNTIME)) {
+		enum pm_device_state state;
+
+		/* Disable UART to reduce the current consumption. */
+		do {
+			rv = pm_device_state_get(uart, &state);
+			if (rv < 0) {
+				return rv;
+			}
+			if (state != PM_DEVICE_STATE_ACTIVE) {
+				break;
+			}
+			pm_device_runtime_put(uart);
+			pm_cnt++;
+		} while (1);
+	}
+
+	return pm_cnt;
+}
+
+void restart_shell_uart(const struct shell *sh, int pm_cnt)
+{
+	static const struct device *uart = DEVICE_DT_GET(DT_CHOSEN(zephyr_shell_uart));
+
+	if (IS_ENABLED(CONFIG_PM_DEVICE_RUNTIME)) {
+		for (int i = 0; i < pm_cnt; i++) {
+			pm_device_runtime_get(uart);
+		}
+	}
+}
+
 int test_run(const struct shell *shell,
 	     const struct bt_le_conn_param *conn_param,
 	     const struct bt_conn_le_phy_param *phy,
@@ -627,6 +666,8 @@ int test_run(const struct shell *shell,
 	stamp = k_uptime_get_32();
 	cpu_load_get(true);
 
+	int pm_cnt = stop_shell_uart(shell);
+
 	while (true) {
 		err = bt_throughput_write(&throughput, dummy, sizeof(dummy));
 		if (err) {
@@ -642,6 +683,7 @@ int test_run(const struct shell *shell,
 	delta = k_uptime_delta(&stamp);
 
 	int load = cpu_load_get(true);
+	restart_shell_uart(shell, pm_cnt);
 	printk("\nDone, CPU load: %d.%d\n", load / 10, load % 10);
 	printk("[local] sent %u bytes (%u KB) in %lld ms at %llu kbps\n",
 	       data, data / 1024, delta, ((uint64_t)data * 8 / delta));

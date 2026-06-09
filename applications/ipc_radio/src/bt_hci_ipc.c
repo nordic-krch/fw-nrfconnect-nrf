@@ -196,7 +196,7 @@ static void send(struct net_buf *buf, bool is_fatal_err)
 		}
 	} while (ret < 0);
 
-	LOG_INF("Sent message of %d bytes.", ret);
+	LOG_DBG("Sent message of %d bytes.", ret);
 
 	net_buf_unref(buf);
 }
@@ -215,7 +215,7 @@ static void recv(const void *data, size_t len, void *priv)
 	struct ipc_block_item block;
 	int err;
 
-	LOG_INF("Received hci message of %u bytes.", len);
+	LOG_DBG("Received hci message of %u bytes.", len);
 	LOG_HEXDUMP_DBG(data, len, "HCI data:");
 
 #if defined(IPC_HCI_COPY_RX)
