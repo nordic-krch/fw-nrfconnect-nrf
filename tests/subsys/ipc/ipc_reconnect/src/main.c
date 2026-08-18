@@ -77,7 +77,7 @@ static void configure_ipc(struct ipc_ept *endpoint)
 
 	ret = ipc_service_register_endpoint(ipc0_instance, endpoint, &test_ep_cfg);
 	if (ret) {
-		printk("IPC endpoint register failed\n");
+		printk("IPC endpoint register failed %d\n", ret);
 	} else {
 		printk("Endpoint registered\n");
 	}
@@ -160,6 +160,7 @@ int main(void)
 	printk("Disconnecting\n");
 	unconfigure_ipc(&test_endpoint);
 	printk("Reconnecting\n");
+	k_msleep(100);
 	configure_ipc(&test_endpoint);
 	test_transmission(&test_endpoint);
 

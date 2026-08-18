@@ -23,6 +23,7 @@ static void ep_bound_callback(void *priv)
 
 static void ep_unbound_callback(void *priv)
 {
+	printk("Endpoint unbound\n");
 	k_sem_give(&endpoint_unbound_sem);
 }
 
@@ -54,6 +55,13 @@ static struct ipc_ept_cfg test_ep_cfg = {
 static void configure_ipc(struct ipc_ept *endpoint)
 {
 	int ret;
+
+	ret = ipc_service_close_instance(ipc0_instance);
+	if ((ret < 0) && (ret != -EALREADY)) {
+		printk("Failed to close IPC instance: %d\n", ret);
+	} else {
+		printk("IPC instance closed\n");
+	}
 
 	ret = ipc_service_open_instance(ipc0_instance);
 	if ((ret < 0) && (ret != -EALREADY)) {
@@ -93,7 +101,7 @@ int main(void)
 			printk("Reconnecting\n");
 			configure_ipc(&test_endpoint);
 		}
-		k_msleep(1000);
+		k_msleep(10);
 	}
 
 	return 0;

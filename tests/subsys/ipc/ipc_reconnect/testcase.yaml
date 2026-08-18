@@ -30,35 +30,31 @@ common:
       - "Message 2 received"
 
 tests:
-  subsys.ipc.ipc_reconnect.app_rad.icmsg:
+  subsys.ipc.ipc_reconnect.cpuapp_cpurad.icmsg:
     platform_allow:
       - nrf5340dk/nrf5340/cpuapp
       - nrf54h20dk/nrf54h20/cpuapp
     integration_platforms:
       - nrf54h20dk/nrf54h20/cpuapp
     extra_args:
-      - FILE_SUFFIX=icmsg
+      - platform:nrf5340dk/nrf5340/cpuapp:FILE_SUFFIX=icmsg
+      - platform:nrf54h20dk/nrf54h20/cpuapp:ipc_reconnect_EXTRA_DTC_OVERLAY_FILE="boards/ipc0_icmsg.overlay"
+      - platform:nrf54h20dk/nrf54h20/cpuapp:remote_EXTRA_DTC_OVERLAY_FILE="boards/ipc0_icmsg.overlay"
 
-  subsys.ipc.ipc_reconnect.app_rad.icbmsg:
+  subsys.ipc.ipc_reconnect.cpuapp_cpurad.icbmsg:
     platform_allow:
       - nrf54h20dk/nrf54h20/cpuapp
     integration_platforms:
       - nrf54h20dk/nrf54h20/cpuapp
+    extra_args:
+      - ipc_reconnect_EXTRA_DTC_OVERLAY_FILE="boards/ipc0_unbound.overlay"
+      - remote_EXTRA_DTC_OVERLAY_FILE="boards/ipc0_unbound.overlay"
 
-  subsys.ipc.ipc_reconnect.app_flpr.icmsg:
-    platform_allow:
-      - nrf54l15dk/nrf54l15/cpuapp
-      - nrf54lm20dk/nrf54lm20a/cpuapp
-      - nrf54lm20dk/nrf54lm20b/cpuapp
-      - nrf54lv10dk/nrf54lv10a/cpuapp
-      - nrf54lc10dk/nrf54lc10a/cpuapp
-      - nrf9251dk/nrf9251/cpuapp
-    integration_platforms:
-      - nrf54l15dk/nrf54l15/cpuapp
+  subsys.ipc.ipc_reconnect.cpuapp_cpuflpr.icmsg:
     extra_args:
       - ipc_reconnect_SNIPPET=nordic-flpr
-
-  subsys.ipc.ipc_reconnect.app_flpr.icbmsg:
+      - ipc_reconnect_EXTRA_DTC_OVERLAY_FILE="boards/ipc0_icmsg.overlay"
+      - remote_EXTRA_DTC_OVERLAY_FILE="boards/ipc0_icmsg.overlay"
     platform_allow:
       - nrf54l15dk/nrf54l15/cpuapp
       - nrf54lm20dk/nrf54lm20a/cpuapp
@@ -66,9 +62,42 @@ tests:
       - nrf54lv10dk/nrf54lv10a/cpuapp
       - nrf54lc10dk/nrf54lc10a/cpuapp
       - nrf7120dk/nrf7120/cpuapp
-      - nrf9251dk/nrf9251/cpuapp
     integration_platforms:
       - nrf54l15dk/nrf54l15/cpuapp
+      - nrf7120dk/nrf7120/cpuapp
+
+  subsys.ipc.ipc_reconnect.cpuapp_cpuflpr.icbmsg:
     extra_args:
       - ipc_reconnect_SNIPPET=nordic-flpr
-      - FILE_SUFFIX=icbmsg
+      - ipc_reconnect_CONFIG_IPC_SERVICE_BACKEND_ICBMSG_DEINIT=y
+      - remote_CONFIG_IPC_SERVICE_BACKEND_ICBMSG_DEINIT=y
+    platform_allow:
+      - nrf54l15dk/nrf54l15/cpuapp
+      - nrf54lm20dk/nrf54lm20a/cpuapp
+      - nrf54lm20dk/nrf54lm20b/cpuapp
+      - nrf54lv10dk/nrf54lv10a/cpuapp
+      - nrf54lc10dk/nrf54lc10a/cpuapp
+      - nrf7120dk/nrf7120/cpuapp
+    integration_platforms:
+      - nrf54l15dk/nrf54l15/cpuapp
+      - nrf7120dk/nrf7120/cpuapp
+
+  subsys.ipc.ipc_reconnect.cpuapp_cpuppr.icmsg:
+    platform_allow:
+      - nrf9251dk/nrf9251/cpuapp
+    integration_platforms:
+      - nrf9251dk/nrf9251/cpuapp
+    extra_args:
+      - FILE_SUFFIX=cpuppr
+      - ipc_reconnect_SNIPPET=nordic-ppr
+      - ipc_reconnect_EXTRA_DTC_OVERLAY_FILE="boards/ipc0_icmsg.overlay"
+      - remote_EXTRA_DTC_OVERLAY_FILE="boards/ipc0_icmsg.overlay"
+
+  subsys.ipc.ipc_reconnect.cpuapp_cpuppr.icbmsg:
+    platform_allow:
+      - nrf9251dk/nrf9251/cpuapp
+    integration_platforms:
+      - nrf9251dk/nrf9251/cpuapp
+    extra_args:
+      - FILE_SUFFIX=cpuppr
+      - ipc_reconnect_SNIPPET=nordic-ppr
